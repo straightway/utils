@@ -15,11 +15,12 @@
  */
 package straightway.utils
 
+import java.time.LocalDateTime
+
 /**
- * Allow attaching to and detaching from an event. To detach, the event token
- * returned by the attach must be provided to identify the connection.
+ * Provide the current time. Can be used to abstract the time to be able to
+ * simulate and unit-test time-dependent algorithms.
  */
-interface EventRegistry<T> {
-    infix fun attach(handler: (T) -> Unit): EventHandlerToken
-    infix fun detach(token: EventHandlerToken): Boolean
+interface TimeProvider {
+    val currentTime: LocalDateTime
 }

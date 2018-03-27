@@ -15,11 +15,12 @@
  */
 package straightway.utils
 
-/**
- * Allow attaching to and detaching from an event. To detach, the event token
- * returned by the attach must be provided to identify the connection.
- */
-interface EventRegistry<T> {
-    infix fun attach(handler: (T) -> Unit): EventHandlerToken
-    infix fun detach(token: EventHandlerToken): Boolean
-}
+import java.io.ByteArrayOutputStream
+import java.io.ObjectOutputStream
+import java.io.Serializable
+
+fun <T : Serializable> T.serializeToByteArray() =
+        ByteArrayOutputStream().use {
+            ObjectOutputStream(it).use { it.writeObject(this) }
+            it.toByteArray()
+        }!!

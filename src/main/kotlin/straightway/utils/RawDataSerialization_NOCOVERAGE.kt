@@ -13,13 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package straightway.utils
 
-/**
- * Allow attaching to and detaching from an event. To detach, the event token
- * returned by the attach must be provided to identify the connection.
- */
-interface EventRegistry<T> {
-    infix fun attach(handler: (T) -> Unit): EventHandlerToken
-    infix fun detach(token: EventHandlerToken): Boolean
-}
+import java.io.ByteArrayInputStream
+import java.io.ObjectInputStream
+import java.io.Serializable
+
+inline fun <reified T : Serializable> ByteArray.deserializeTo() =
+        ByteArrayInputStream(this).use {
+            ObjectInputStream(it).use { T::class.java.cast(it.readObject()) }
+        }!!

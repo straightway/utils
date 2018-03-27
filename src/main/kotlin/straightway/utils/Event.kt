@@ -33,7 +33,7 @@ class Event<T> : EventRegistry<T>, EventTrigger<T> {
         }
     }
 
-    override infix fun attach(handler: (T) -> Unit) : EventHandlerToken {
+    override infix fun attach(handler: (T) -> Unit): EventHandlerToken {
         val token = EventHandlerToken()
         _handlers += HandlerEntry(token, handler)
         return token

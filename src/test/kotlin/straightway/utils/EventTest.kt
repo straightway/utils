@@ -124,7 +124,7 @@ class EventTest {
     @Test
     fun `attaching while event is executed is not considered in this execution`() =
             test while_ {
-                sut attach { sut attach listener::onEvent}
+                sut attach { sut attach listener::onEvent }
             } when_ {
                 sut("Hello")
             } then {
@@ -134,7 +134,7 @@ class EventTest {
     @Test
     fun `attaching while event is executed is considered in the next execution`() =
             test while_ {
-                sut attach { sut attach listener::onEvent}
+                sut attach { sut attach listener::onEvent }
             } when_ {
                 sut("Hello")
                 sut("Hello")
