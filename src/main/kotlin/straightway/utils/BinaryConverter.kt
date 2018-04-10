@@ -15,9 +15,19 @@
  */
 package straightway.utils
 
+const val BYTE_MASK = 0xff
 
-fun ByteArray.getInt() =
-        take(4).fold(0) { acc, byte -> (acc shl 8) or ((byte.toInt() and 0xff)) }
+fun ByteArray.getInt() = take(Integer.BYTES).fold(0) { acc, byte ->
+    (acc shl java.lang.Byte.SIZE) or ((byte.toInt() and BYTE_MASK))
+}
 
-fun ByteArray.getPositiveInt() =
-        getInt() and 0x7fffffff
+fun ByteArray.getUnsignedInt() =
+        getInt() and Int.MAX_VALUE
+
+fun Int.toByteArray() = ByteArray(Integer.BYTES) { getByte(Integer.BYTES - 1 - it) }
+
+private fun Int.getByte(byteIndex: Int) =
+        ((this and byteIndex.byteMask) ushr byteIndex.bitIndex).toByte()
+
+private val Int.byteMask get() = BYTE_MASK shl bitIndex
+private val Int.bitIndex get() = this * java.lang.Byte.SIZE

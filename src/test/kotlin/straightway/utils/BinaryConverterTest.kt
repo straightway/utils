@@ -35,6 +35,16 @@ class BinaryConverterTest {
             }
 
     @Test
+    fun `getInt yields correct partial result`() =
+            Given {
+                byteArrayOf(1)
+            } when_ {
+                getInt()
+            } then {
+                expect(it.result is_ Equal to_ 1)
+            }
+
+    @Test
     fun `getInt yield correct result`() =
             Given {
                 byteArrayOf(1, 2, 3, 4)
@@ -75,23 +85,50 @@ class BinaryConverterTest {
             }
 
     @Test
-    fun `getPositiveInt yields correct maximal result`() =
+    fun `getUnsignedInt yields correct maximal result`() =
             Given {
                 byteArrayOf(0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte())
             } when_ {
-                getPositiveInt()
+                getUnsignedInt()
             } then {
                 expect(it.result is_ Equal to_ Int.MAX_VALUE)
             }
 
-
     @Test
-    fun `getPositiveInt yields correct minimal result`() =
+    fun `getUnsignedInt yields correct minimal result`() =
             Given {
                 byteArrayOf(0x80.toByte(), 0, 0, 0)
             } when_ {
-                getPositiveInt()
+                getUnsignedInt()
             } then {
                 expect(it.result is_ Equal to_ 0)
+            }
+
+    @Test
+    fun `getUnsignedInt yields correct partial result`() =
+            Given {
+                byteArrayOf(1)
+            } when_ {
+                getUnsignedInt()
+            } then {
+                expect(it.result is_ Equal to_ 1)
+            }
+
+    @Test
+    fun `toByteArray of Int`() =
+            Given { 0x12345678 } when_ { toByteArray() } then {
+                expect(it.result contentEquals byteArrayOf(0x12, 0x34, 0x56, 0x78))
+            }
+
+    @Test
+    fun `Int_toByteArray is reciproke of getInt`() =
+            Given { -12345678 } when_ { toByteArray() } then {
+                expect(this is_ Equal to_ it.result.getInt())
+            }
+
+    @Test
+    fun `Int_toByteArray is reciproke of getInt for small values`() =
+            Given { 1 } when_ { toByteArray() } then {
+                expect(this is_ Equal to_ it.result.getInt())
             }
 }
