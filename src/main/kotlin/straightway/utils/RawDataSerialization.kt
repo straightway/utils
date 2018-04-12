@@ -17,9 +17,8 @@ package straightway.utils
 
 import java.io.ByteArrayOutputStream
 import java.io.ObjectOutputStream
-import java.io.Serializable
 
-fun <T : Serializable> T.serializeToByteArray() =
+fun <T : Any> T.serializeToByteArray() =
         ByteArrayOutputStream().use {
             ObjectOutputStream(it).use { it.writeObject(this) }
             it.toByteArray()

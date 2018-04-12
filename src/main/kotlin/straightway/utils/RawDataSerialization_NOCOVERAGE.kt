@@ -18,9 +18,8 @@ package straightway.utils
 
 import java.io.ByteArrayInputStream
 import java.io.ObjectInputStream
-import java.io.Serializable
 
-inline fun <reified T : Serializable> ByteArray.deserializeTo() =
+inline fun <reified T : Any> ByteArray.deserializeTo() =
         ByteArrayInputStream(this).use {
             ObjectInputStream(it).use { T::class.java.cast(it.readObject()) }
         }!!
