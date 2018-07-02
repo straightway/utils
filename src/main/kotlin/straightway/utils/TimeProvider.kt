@@ -22,5 +22,5 @@ import java.time.LocalDateTime
  * simulate and unit-test time-dependent algorithms.
  */
 interface TimeProvider {
-    val currentTime: LocalDateTime
+    val now: LocalDateTime
 }

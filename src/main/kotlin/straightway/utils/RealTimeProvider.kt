@@ -21,6 +21,6 @@ import java.time.LocalDateTime
  * A time provider which yields the current real time.
  */
 class RealTimeProvider : TimeProvider {
-    override val currentTime: LocalDateTime
+    override val now: LocalDateTime
         get() = LocalDateTime.now()
 }

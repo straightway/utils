@@ -31,7 +31,7 @@ class RealTimeProviderTest {
             Given {
                 RealTimeProvider()
             } when_ {
-                currentTime
+                now
             } then {
                 expect(Duration.between(it.result, LocalDateTime.now())
                                is_ Less than Duration.ofSeconds(1))
