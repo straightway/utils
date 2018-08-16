@@ -15,6 +15,8 @@
  */
 package straightway.utils
 
+import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.verify
 import org.junit.jupiter.api.Test
 import straightway.error.Panic
 import straightway.testing.bdd.Given
@@ -27,6 +29,7 @@ import straightway.testing.flow.is_
 import straightway.testing.flow.to_
 import kotlin.reflect.full.memberFunctions
 
+@Suppress("unused")
 class TaggedHandlerExecutorTest {
 
     @Target(AnnotationTarget.FUNCTION)
@@ -35,6 +38,12 @@ class TaggedHandlerExecutorTest {
     interface IHandler {
         @Tag
         fun handlerFun(request: Int)
+
+        @Tag
+        fun handlerFun(request: Int, otherParameter: Int) {}
+
+        @Tag
+        fun handlerFun(request: Any) {}
 
         @Tag
         fun inheritedTagFun(request: Double)
@@ -84,9 +93,19 @@ class TaggedHandlerExecutorTest {
             Given {
                 Handler()
             } when_ {
-                this.getHandlers<Tag>(Int::class).single()(83)
+                getHandlers<Tag>(Int::class).single()(83)
             } then {
                 expect(receivedRequests is_ Equal to_ listOf(83))
+            }
+
+    @Test
+    fun `getHandlers works with a mock`() =
+            Given {
+                mock<IHandler>()
+            } when_ {
+                getHandlers<Tag>(Int::class).single()(83)
+            } then {
+                verify(this).handlerFun(83)
             }
 
     @Test
