@@ -18,6 +18,7 @@ ext.uploadToRepository = true
 
 dependencies {
     compile straightway('error')
+    compile kotlin('reflect')
     testCompile straightway('testing')
     testCompile mockitoKotlin()
 }
