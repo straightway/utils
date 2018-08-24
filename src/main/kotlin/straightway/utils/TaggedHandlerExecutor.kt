@@ -22,13 +22,11 @@ import kotlin.reflect.full.valueParameters
 import kotlin.reflect.jvm.javaMethod
 
 /**
- * Determine if the target function is a handler for the given request type.
- * This is the case if the function takes only one value parameter of the request type and
- * does not return anything.
+ * Determine if the given function is a handler function matching the given RequestTypeSelector.
  */
-fun KFunction<*>.isHandlerOf(requestType: KClass<*>) =
+fun KFunction<*>.isHandlerOf(selector: RequestTypeSelector) =
         returnType.classifier == Unit::class &&
-        valueParameters.map { it.type.classifier } == listOf(requestType)
+        valueParameters.singleOrNull { it.type.selector() } != null
 
 /**
  * Get all annotations for the given function, also recursively for all base classes.

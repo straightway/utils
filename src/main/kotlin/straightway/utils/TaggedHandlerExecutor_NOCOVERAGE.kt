@@ -15,23 +15,23 @@
  */
 package straightway.utils
 
-import kotlin.reflect.KClass
 import kotlin.reflect.full.functions
 
 /**
  * Get all handler functions as callable lambdas of the target object being annotated
- * with the TTag annotation and having the given request class as parameter.
+ * with the TTag annotation and matching the given request type selector.
  */
-inline fun <reified TTag : Annotation> Any.getHandlers(requestClass: KClass<*>) =
-        getHandlerFunctionsFor<TTag>(requestClass).map {
-            { request: Any -> it.call(this, request) }
-        }
+inline fun <reified TTag : Annotation> Any.getHandlers(noinline selector: RequestTypeSelector) =
+        getHandlerFunctionsFor<TTag>(selector)
+                .map { { request: Any -> it.call(this, request); Unit } }
 
 /**
  * Get all handler functions of the target object being annotated with the TTag annotation
- * and having the given request class as parameter.
+ * and having a parameter matching the given request type selector.
  */
-inline fun <reified TTag : Annotation> Any.getHandlerFunctionsFor(requestClass: KClass<*>) =
+inline fun <reified TTag : Annotation> Any.getHandlerFunctionsFor(
+        noinline selector: RequestTypeSelector
+) =
         this::class.functions
-            .filter { fn -> fn.recursiveAnnotations.any { it is TTag } }
-            .filter { it.isHandlerOf(requestClass) }
+                .filter { fn -> fn.recursiveAnnotations.any { it is TTag } }
+                .filter { it.isHandlerOf(selector) }

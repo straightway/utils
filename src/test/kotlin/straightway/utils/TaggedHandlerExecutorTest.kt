@@ -93,7 +93,7 @@ class TaggedHandlerExecutorTest {
             Given {
                 Handler()
             } when_ {
-                getHandlers<Tag>(Int::class).single()(83)
+                getHandlers<Tag>(isClass(Int::class)).single()(83)
             } then {
                 expect(receivedRequests is_ Equal to_ listOf(83))
             }
@@ -103,7 +103,7 @@ class TaggedHandlerExecutorTest {
             Given {
                 mock<IHandler>()
             } when_ {
-                getHandlers<Tag>(Int::class).single()(83)
+                getHandlers<Tag>(isClass(Int::class)).single()(83)
             } then {
                 verify(this).handlerFun(83)
             }
@@ -113,7 +113,7 @@ class TaggedHandlerExecutorTest {
             Given {
                 getHandlerFunction("funWithoutTags")
             } when_ {
-                isHandlerOf(Int::class)
+                isHandlerOf(isClass(Int::class))
             } then {
                 expect(it.result is_ True)
             }
@@ -123,7 +123,7 @@ class TaggedHandlerExecutorTest {
             Given {
                 getHandlerFunction("funWithoutTags")
             } when_ {
-                isHandlerOf(Double::class)
+                isHandlerOf(isClass(Double::class))
             } then {
                 expect(it.result is_ False)
             }
@@ -133,7 +133,7 @@ class TaggedHandlerExecutorTest {
             Given {
                 getHandlerFunction("funWithReturnValue")
             } when_ {
-                isHandlerOf(Int::class)
+                isHandlerOf(isClass(Int::class))
             } then {
                 expect(it.result is_ False)
             }
