@@ -23,3 +23,9 @@ interface EventRegistry<T> {
     infix fun attach(handler: (T) -> Unit): EventHandlerToken
     infix fun detach(token: EventHandlerToken): Boolean
 }
+
+fun <T> EventRegistry<T>.handleOnce(handler: (T) -> Unit): EventHandlerToken {
+    lateinit var eventHandlerToken: EventHandlerToken
+    eventHandlerToken = attach { handler(it); detach(eventHandlerToken) }
+    return eventHandlerToken
+}

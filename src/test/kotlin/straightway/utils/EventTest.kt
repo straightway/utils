@@ -164,4 +164,38 @@ class EventTest {
             } then {
                 expect({ it.result } does Not - Throw.exception)
             }
+
+    @Test
+    fun `handleOnce handles the event`() =
+            test while_ {
+                sut.handleOnce { listener.onEvent(it) }
+            } when_ {
+                sut("Hello")
+            } then {
+                verify(listener).onEvent("Hello")
+            }
+
+    @Test
+    fun `handleOnce detaches itself after handling the event`() =
+            test while_ {
+                sut.handleOnce { listener.onEvent(it) }
+            } when_ {
+                sut("Hello")
+                sut("Hello")
+            } then {
+                verify(listener).onEvent("Hello")
+            }
+
+    @Test
+    fun `handleOnce returns token allowing to detach manually`() {
+        lateinit var token: EventHandlerToken
+        test while_ {
+            token = sut.handleOnce { listener.onEvent(it) }
+        } when_ {
+            sut.detach(token)
+            sut("Hello")
+        } then {
+            verify(listener, never()).onEvent("Hello")
+        }
+    }
 }
