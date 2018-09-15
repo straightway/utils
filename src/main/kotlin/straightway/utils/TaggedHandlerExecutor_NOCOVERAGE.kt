@@ -23,7 +23,7 @@ import kotlin.reflect.full.functions
  */
 inline fun <reified TTag : Annotation> Any.getHandlers(noinline selector: RequestTypeSelector) =
         getHandlerFunctionsFor<TTag>(selector)
-                .map { { request: Any -> it.call(this, request); Unit } }
+                .map { { request: Any -> it.call(this, request) } }
 
 /**
  * Get all handler functions of the target object being annotated with the TTag annotation
