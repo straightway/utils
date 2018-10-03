@@ -17,17 +17,18 @@ package straightway.utils
 
 import straightway.error.Panic
 
-fun <T: Comparable<T>> min(vararg items: T): T = extreme(*items) { a, b -> a < b }
+fun <T : Comparable<T>> min(vararg items: T): T = extreme(*items) { a, b -> a < b }
 
-fun <T: Comparable<T>> max(vararg items: T): T = extreme(*items) { a, b -> b < a }
+fun <T : Comparable<T>> max(vararg items: T): T = extreme(*items) { a, b -> b < a }
 
 fun <T> extreme(vararg items: T, isFirstOne: (T, T) -> Boolean): T =
         when {
             items.isEmpty() -> throw Panic("extreme without arguments")
             items.size == 1 -> items[0]
-            else -> extreme(
-                    *items.sliceArray(1..items.lastIndex),
-                    isFirstOne = isFirstOne).let {
-                if (isFirstOne(items[0], it)) items[0] else it
-            }
+            else -> extremeOfMultipleValues(items, isFirstOne)
+        }
+
+private fun <T> extremeOfMultipleValues(items: Array<out T>, isFirstOne: (T, T) -> Boolean) =
+        extreme(*items.sliceArray(1..items.lastIndex), isFirstOne = isFirstOne).let {
+            if (isFirstOne(items[0], it)) items[0] else it
         }
