@@ -22,7 +22,7 @@ import straightway.testing.flow.expect
 import straightway.testing.flow.is_
 import straightway.testing.flow.to_
 
-class BinaryConverterTest {
+class BinaryConverterTest_intConversion {
 
     @Test
     fun `getInt for empty bytes yields 0`() =
@@ -72,6 +72,16 @@ class BinaryConverterTest {
                 getInt()
             } then {
                 expect(it.result is_ Equal to_ Int.MAX_VALUE)
+            }
+
+    @Test
+    fun `getInt yields correct ordinary result`() =
+            Given {
+                byteArrayOf(0x0a.toByte(), 0xbc.toByte(), 0xde.toByte(), 0xf1.toByte())
+            } when_ {
+                getInt()
+            } then {
+                expect(it.result is_ Equal to_ 0x0abcdef1)
             }
 
     @Test

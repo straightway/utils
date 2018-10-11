@@ -16,18 +16,60 @@
 package straightway.utils
 
 const val BYTE_MASK = 0xff
+const val BYTE_MASK_LONG = 0xffL
 
+/**
+ * Get an integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
 fun ByteArray.getInt() = take(Integer.BYTES).fold(0) { acc, byte ->
-    (acc shl java.lang.Byte.SIZE) or ((byte.toInt() and BYTE_MASK))
+    (acc shl java.lang.Byte.SIZE) or byte.intValue
 }
 
+/**
+ * Get a long integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
+fun ByteArray.getLong() = take(java.lang.Long.BYTES).fold(0L) { acc, byte ->
+    (acc shl java.lang.Byte.SIZE) or byte.intValue.toLong()
+}
+
+/**
+ * Get an unsigned integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
 fun ByteArray.getUnsignedInt() =
         getInt() and Int.MAX_VALUE
 
-fun Int.toByteArray() = ByteArray(Integer.BYTES) { getByte(Integer.BYTES - 1 - it) }
+/**
+ * Get an unsigned long integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
+fun ByteArray.getUnsignedLong() =
+        getLong() and Long.MAX_VALUE
+
+/**
+ * Encode the given value to a byte array in big endian byte order.
+ */
+fun Int.toByteArray() = ByteArray(Integer.BYTES) {
+    getByte(Integer.BYTES - 1 - it)
+}
+
+/**
+ * Encode the given value to a byte array in big endian byte order.
+ */
+fun Long.toByteArray() = ByteArray(java.lang.Long.BYTES) {
+    getByte(java.lang.Long.BYTES - 1 - it)
+}
+
+private val Byte.intValue get() = toInt() and BYTE_MASK
 
 private fun Int.getByte(byteIndex: Int) =
         ((this and byteIndex.byteMask) ushr byteIndex.bitIndex).toByte()
 
+private fun Long.getByte(byteIndex: Int) =
+        ((this and byteIndex.byteMaskLong) ushr byteIndex.bitIndex).toByte()
+
 private val Int.byteMask get() = BYTE_MASK shl bitIndex
+private val Int.byteMaskLong get() = BYTE_MASK_LONG shl bitIndex
 private val Int.bitIndex get() = this * java.lang.Byte.SIZE
