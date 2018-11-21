@@ -154,6 +154,7 @@ class EventTest {
             }
 
     @Test
+    @Suppress("SwallowedException")
     fun `another invocation after first invocation threw works`() =
             test while_ {
                 val token = sut attach { throw Panic("Aaaah!") }
