@@ -52,12 +52,36 @@ class RangeHelpersTest {
             expect(2..3 intersectsWith 3..4 is_ True)
 
     @Test
-    @Suppress("EmptyRange")
+    fun `a range does not contain a disjoint range`() =
+            expect((2 crangeTo 3).contains(4 crangeTo 5) is_ False)
+
+    @Test
+    fun `a range does contain a range it completely overlaps`() =
+            expect((1 crangeTo 9).contains(4 crangeTo 5) is_ True)
+
+    @Test
+    fun `a range does not contain a range it only overlaps on the left`() =
+            expect((3 crangeTo 9).contains(1 crangeTo 5) is_ False)
+
+    @Test
+    fun `a range does not contain a range it only overlaps on the right`() =
+            expect((3 crangeTo 9).contains(5 crangeTo 12) is_ False)
+
+    @Test
+    fun `a range does not contain an empty range`() =
+            expect((3 crangeTo 9).contains(5 crangeTo 4) is_ False)
+
+    @Test
+    fun `a range does not contain a single element range`() =
+            expect((3 crangeTo 9).contains(5 crangeTo 5) is_ True)
+
+    @Test
+    @Suppress("EmptyRange", "InvalidRange")
     fun `empty range first does not intersect`() =
             expect(3..2 intersectsWith 1..4 is_ False)
 
     @Test
-    @Suppress("EmptyRange")
+    @Suppress("EmptyRange", "InvalidRange")
     fun `empty range second does not intersect`() =
             expect(1..4 intersectsWith 3..2 is_ False)
 
@@ -96,13 +120,28 @@ class RangeHelpersTest {
             expect((3 crangeTo 1) u (4 crangeTo 2) is_ Empty)
 
     @Test
+    fun `union of two Range collections`() =
+            expect(listOf(1 crangeTo 2) u listOf(3 crangeTo 4) is_
+                    Equal to_ Values(1 crangeTo 2, 3 crangeTo 4))
+
+    @Test
     fun `intersection of two disjoint ranges is empty`() =
             expect((1 crangeTo 2) / (3 crangeTo 4) is_ Empty)
 
     @Test
-    fun `intersection of two overlapping ranges 1`() =
+    fun `intersection of two right overlapping ranges 1`() =
             expect((1 crangeTo 3) / (2 crangeTo 4) is_
                     Equal to_ Values(2 crangeTo 3))
+
+    @Test
+    fun `intersection of two left overlapping ranges 1`() =
+            expect((1 crangeTo 3) / (0 crangeTo 2) is_
+                    Equal to_ Values(1 crangeTo 2))
+
+    @Test
+    fun `intersection of two fully overlapping ranges 1`() =
+            expect((1 crangeTo 3) / (0 crangeTo 4) is_
+                    Equal to_ Values(1 crangeTo 3))
 
     @Test
     fun `intersection with left empty range is empty`() =
@@ -114,15 +153,15 @@ class RangeHelpersTest {
 
     @Test
     fun `difference from a disjoint range is identical`() =
-            expect((3 crangeTo 7) - (8 crangeTo 9) is_ Equal to_ listOf(3 crangeTo 7))
+            expect((3 crangeTo 7) - (8 crangeTo 9) is_ Equal to_ Values(3 crangeTo 7))
 
     @Test
     fun `difference from a range overlapping on the right`() =
-            expect((3 crangeTo 7) - (5 crangeTo 9) is_ Equal to_ listOf(3 crangeTo 5))
+            expect((3 crangeTo 7) - (5 crangeTo 9) is_ Equal to_ Values(3 crangeTo 5))
 
     @Test
     fun `difference from a range overlapping on the left`() =
-            expect((3 crangeTo 7) - (1 crangeTo 5) is_ Equal to_ listOf(5 crangeTo 7))
+            expect((3 crangeTo 7) - (1 crangeTo 5) is_ Equal to_ Values(5 crangeTo 7))
 
     @Test
     fun `difference from a completely overlapping range is empty`() =
@@ -131,7 +170,7 @@ class RangeHelpersTest {
     @Test
     fun `difference from a completely included range`() =
             expect((3 crangeTo 7) - (4 crangeTo 6) is_
-                    Equal to_ listOf(3 crangeTo 4, 6 crangeTo 7))
+                    Equal to_ Values(3 crangeTo 4, 6 crangeTo 7))
 
     @Test
     fun `difference from an equal range is empty`() =
@@ -139,11 +178,16 @@ class RangeHelpersTest {
 
     @Test
     fun `difference from a range of zero size is identical`() =
-            expect((3 crangeTo 7) - (6 crangeTo 6) is_ Equal to_ listOf(3 crangeTo 7))
+            expect((3 crangeTo 7) - (6 crangeTo 6) is_ Equal to_ Values(3 crangeTo 7))
 
     @Test
     fun `difference from an empty range is identical`() =
-            expect((3 crangeTo 7) - (6 crangeTo 5) is_ Equal to_ listOf(3 crangeTo 7))
+            expect((3 crangeTo 7) - (6 crangeTo 5) is_ Equal to_ Values(3 crangeTo 7))
+
+    @Test
+    fun `difference of two Range collections`() =
+            expect(listOf(1 crangeTo 3) without listOf(2 crangeTo 4) is_
+                    Equal to_ Values(1 crangeTo 2))
 
     // region Private
 
