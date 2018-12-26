@@ -256,5 +256,15 @@ class RangesTest {
                 expect(this is_ Equal to_ Values(8 crangeTo 9))
             }
 
+    @Test
+    fun `size equals size of ranges`() =
+            Given {
+                Ranges(1 crangeTo 3, 8 crangeTo 10, 4 crangeTo 6)
+            } when_ {
+                size
+            } then {
+                expect(it.result is_ Equal to_ 3)
+            }
+
     private infix fun <T : Comparable<T>> T.crangeTo(other: T) = this..other
 }

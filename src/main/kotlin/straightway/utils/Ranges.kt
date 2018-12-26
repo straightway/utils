@@ -92,6 +92,8 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
     operator fun plus(other: ClosedRange<T>): Ranges<T> =
             Ranges(this).apply { this += other }
 
+    val size get() = ranges.size
+
     companion object {
 
         /**
