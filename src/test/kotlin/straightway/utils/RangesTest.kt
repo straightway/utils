@@ -15,6 +15,7 @@
  */
 package straightway.utils
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import straightway.testing.bdd.Given
 import straightway.testing.flow.Empty
@@ -23,6 +24,8 @@ import straightway.testing.flow.Values
 import straightway.testing.flow.expect
 import straightway.testing.flow.is_
 import straightway.testing.flow.to_
+import java.lang.management.ManagementFactory
+import kotlin.random.Random
 
 class RangesTest {
 
@@ -177,11 +180,22 @@ class RangesTest {
             }
 
     @Test
+    fun `excluding a range from last range`() =
+            Given {
+                Ranges(1 crangeTo 2, 5 crangeTo 9)
+            } when_ {
+                this -= 8 crangeTo 10
+            } then {
+                expect(this is_ Equal to_
+                        Values(1 crangeTo 2, 5 crangeTo 8))
+            }
+
+    @Test
     fun `excluding a set of ranges includes all contained ranges`() =
             Given {
                 Ranges(1 crangeTo 3, 4 crangeTo 9)
             } when_ {
-                this -= (listOf(2 crangeTo 5, 8 crangeTo 10))
+                this -= listOf(2 crangeTo 5, 8 crangeTo 10)
             } then {
                 expect(this is_ Equal to_
                         Values(1 crangeTo 2, 5 crangeTo 8))
@@ -265,6 +279,25 @@ class RangesTest {
             } then {
                 expect(it.result is_ Equal to_ 3)
             }
+
+    @Test @Disabled
+    fun `performance test`() {
+        println("init")
+        val rng = Random(1234)
+        val ranges = (1..5000000).map {
+            val x = rng.nextDouble(0.0, 1.0) + it / 10.0
+            val y = rng.nextDouble(0.0, 1.0) + it / 10.0
+            min(x, y)..max(x, y)
+        }
+        val sut = Ranges<Double>()
+        println("start")
+        val mxBean = ManagementFactory.getThreadMXBean()!!
+        val startTime = mxBean.currentThreadCpuTime
+        ranges.forEach { sut += it }
+        val duration = ((mxBean.currentThreadCpuTime - startTime).toDouble()) * 1e-9
+        println("Duration for inserting ${ranges.size} random items " +
+                "to Ranges collection: $duration s")
+    }
 
     private infix fun <T : Comparable<T>> T.crangeTo(other: T) = this..other
 }

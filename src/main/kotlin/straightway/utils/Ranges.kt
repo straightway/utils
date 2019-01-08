@@ -15,6 +15,9 @@
  */
 package straightway.utils
 
+import java.util.NavigableSet
+import java.util.TreeSet
+
 /**
  * Set of disjoint ranges.
  */
@@ -36,8 +39,8 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
      */
     operator fun minusAssign(toExclude: ClosedRange<T>) {
         if (toExclude.hasZeroLength) return
-        val intersections = extractIntersectionsWith(toExclude)
-        intersections.forEach { ranges.addSorted(it - toExclude) }
+        val intersections = IntersectionsPoller(toExclude).intersections
+        ranges.addAll(intersections.flatMap { it - toExclude })
     }
 
     /**
@@ -51,9 +54,9 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
      */
     operator fun plusAssign(toInclude: ClosedRange<T>) {
         if (toInclude.hasZeroLength) return
-        val intersections = extractIntersectionsWith(toInclude)
+        val intersections = IntersectionsPoller(toInclude).intersections
         val union = getUnion(intersections + toInclude)
-        ranges.addSorted(union)
+        ranges.add(union)
     }
 
     /**
@@ -66,7 +69,7 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
      * Compute the intersection of the current ranges with the given range.
      */
     operator fun divAssign(intersecting: ClosedRange<T>) {
-        val intersections = extractIntersectionsWith(intersecting)
+        val intersections = IntersectionsPoller(intersecting).intersections
         ranges.clear()
         intersections.forEach { ranges.addAll(it / intersecting) }
     }
@@ -80,18 +83,33 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
         allIntersections.forEach(this::plusAssign)
     }
 
+    /**
+     * Compute the difference to another set of ranges.
+     */
     operator fun minus(other: Iterable<ClosedRange<T>>): Ranges<T> =
             Ranges(this).apply { this -= other }
 
+    /**
+     * Compute the difference to another range.
+     */
     operator fun minus(other: ClosedRange<T>): Ranges<T> =
             Ranges(this).apply { this -= other }
 
+    /**
+     * Compute the union with another set of ranges.
+     */
     operator fun plus(other: Iterable<ClosedRange<T>>): Ranges<T> =
             Ranges(this).apply { this += other }
 
+    /**
+     * Compute the union with another range.
+     */
     operator fun plus(other: ClosedRange<T>): Ranges<T> =
             Ranges(this).apply { this += other }
 
+    /**
+     * Gets the number of included ranges.
+     */
     val size get() = ranges.size
 
     companion object {
@@ -102,23 +120,6 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
         operator fun <T : Comparable<T>> invoke(vararg ranges: ClosedRange<T>) =
                 Ranges(ranges.asIterable())
 
-        private fun <T : Comparable<T>> MutableList<ClosedRange<T>>.addSorted(
-                new: Iterable<ClosedRange<T>>
-        ) = new.forEach { addSorted(it) }
-
-        private fun <T : Comparable<T>> MutableList<ClosedRange<T>>.addSorted(
-                new: ClosedRange<T>
-        ) {
-            forEachIndexed { index, closedRange ->
-                if (new.start <= closedRange.start) {
-                    add(index, new)
-                    return
-                }
-            }
-
-            add(new)
-        }
-
         private val <T : Comparable<T>> ClosedRange<T>.hasZeroLength get() = endInclusive <= start
 
         private fun <T : Comparable<T>> getUnion(elements: List<ClosedRange<T>>): ClosedRange<T> {
@@ -126,35 +127,37 @@ class Ranges<T : Comparable<T>>(ranges: Iterable<ClosedRange<T>>)
             val maxEndInclusive = elements.maxBy { it.endInclusive }!!.endInclusive
             return minStart..maxEndInclusive
         }
-
-        private infix fun <T : Comparable<T>> List<ClosedRange<T>>.getIntersectionsWith(
-                intersecting: ClosedRange<T>
-        ): List<ClosedRange<T>> {
-            val result = mutableListOf<ClosedRange<T>>()
-            val rangesIterator = iterator()
-            while (rangesIterator.hasNext()) {
-                val curr = rangesIterator.next()
-                if (curr intersectsWith intersecting) result.add(curr)
-                if (intersecting.endInclusive < curr.start) break
-            }
-
-            return result
-        }
     }
 
     // region Private
 
-    private var ranges = mutableListOf<ClosedRange<T>>()
+    private var ranges = TreeSet<ClosedRange<T>>(RangeStartComparator())
 
     init { ranges.forEach { plusAssign(it) } }
 
     private fun getIntersectionsWith(intersecting: ClosedRange<T>) =
             Ranges(this).apply { divAssign(intersecting) }
 
-    private fun extractIntersectionsWith(toExclude: ClosedRange<T>): List<ClosedRange<T>> {
-        val intersections = ranges getIntersectionsWith toExclude
-        ranges.removeAll(intersections)
-        return intersections
+    private inner class IntersectionsPoller(private val intersecting: ClosedRange<T>) {
+        val intersections = mutableListOf<ClosedRange<T>>()
+        init {
+            extractIntersections(ranges.tailSet(intersecting, true)!!) { pollFirst() }
+            extractIntersections(ranges.headSet(intersecting, true)!!) { pollLast() }
+        }
+
+        private inline fun extractIntersections(
+                part: NavigableSet<ClosedRange<T>>,
+                extractor: NavigableSet<ClosedRange<T>>.() -> ClosedRange<T>?
+        ) {
+            while (true) {
+                val candidate = part.extractor()
+                when {
+                    candidate == null -> return
+                    candidate intersectsWith intersecting -> intersections.add(candidate)
+                    else -> { ranges.add(candidate); return }
+                }
+            }
+        }
     }
 
     // endregion
