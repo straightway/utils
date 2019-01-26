@@ -15,6 +15,8 @@
  */
 package straightway.utils
 
+import java.io.Serializable
+
 const val BYTE_MASK = 0xff
 const val BYTE_MASK_LONG = 0xffL
 
@@ -61,6 +63,22 @@ fun Int.toByteArray() = ByteArray(Integer.BYTES) {
 fun Long.toByteArray() = ByteArray(java.lang.Long.BYTES) {
     getByte(java.lang.Long.BYTES - 1 - it)
 }
+
+fun Serializable.toByteArray() = when (this) {
+    is Int -> this.toByteArray()
+    is Long -> this.toByteArray()
+    is String -> this.toByteArray(Charsets.UTF_8)
+    else -> this.serializeToByteArray()
+}
+
+fun ByteArray.toChunksOfSize(chunkBytes: Int): List<ByteArray> =
+    mutableListOf<ByteArray>().also {
+        for (i in 0 until size step chunkBytes)
+            it.add(chunk(i until i + chunkBytes))
+    }
+
+private fun ByteArray.chunk(indexRange: IntRange): ByteArray =
+        sliceArray(indexRange.start..min(lastIndex, indexRange.endInclusive))
 
 private val Byte.intValue get() = toInt() and BYTE_MASK
 
