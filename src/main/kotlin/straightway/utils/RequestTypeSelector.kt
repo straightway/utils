@@ -23,7 +23,6 @@ typealias RequestTypeSelector = KType.() -> Boolean
 fun isClass(clazz: KClass<*>): RequestTypeSelector =
         { classifier == clazz }
 
-@Suppress("UNUSED_PARAMETER")
 fun isGeneric(
         generic: KClass<*>,
         vararg genericArguments: RequestTypeSelector
