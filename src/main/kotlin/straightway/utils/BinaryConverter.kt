@@ -13,6 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+@file:Suppress("TooManyFunctions")
 package straightway.utils
 
 import java.io.Serializable
@@ -21,11 +22,17 @@ const val BYTE_MASK = 0xff
 const val BYTE_MASK_LONG = 0xffL
 
 /**
+ * Get a short integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
+fun ByteArray.getShort() = getUnsignedShort().toShort()
+
+/**
  * Get an integer from the first four bytes of the given byte array. It is
  * expected that the data is stored in big endian byte order.
  */
-fun ByteArray.getInt() = take(Integer.BYTES).fold(0) { acc, byte ->
-    (acc shl java.lang.Byte.SIZE) or byte.intValue
+fun ByteArray.getInt() = take(Int.SIZE_BYTES).fold(0) { acc, byte ->
+    (acc shl Byte.SIZE_BITS) or byte.intValue
 }
 
 /**
@@ -33,38 +40,49 @@ fun ByteArray.getInt() = take(Integer.BYTES).fold(0) { acc, byte ->
  * expected that the data is stored in big endian byte order.
  */
 fun ByteArray.getLong() = take(java.lang.Long.BYTES).fold(0L) { acc, byte ->
-    (acc shl java.lang.Byte.SIZE) or byte.intValue.toLong()
+    (acc shl Byte.SIZE_BITS) or byte.intValue.toLong()
 }
 
+/**
+ * Get an unsigned short integer from the first four bytes of the given byte array. It is
+ * expected that the data is stored in big endian byte order.
+ */
+fun ByteArray.getUnsignedShort() =
+        take(Short.SIZE_BYTES).fold(0) { acc, byte ->
+            (acc shl Byte.SIZE_BITS) or byte.intValue
+        }
 /**
  * Get an unsigned integer from the first four bytes of the given byte array. It is
  * expected that the data is stored in big endian byte order.
  */
-fun ByteArray.getUnsignedInt() =
-        getInt() and Int.MAX_VALUE
+fun ByteArray.getUnsignedInt() = getInt() and Int.MAX_VALUE
 
 /**
  * Get an unsigned long integer from the first four bytes of the given byte array. It is
  * expected that the data is stored in big endian byte order.
  */
-fun ByteArray.getUnsignedLong() =
-        getLong() and Long.MAX_VALUE
+fun ByteArray.getUnsignedLong() = getLong() and Long.MAX_VALUE
 
 /**
  * Encode the given value to a byte array in big endian byte order.
  */
-fun Int.toByteArray() = ByteArray(Integer.BYTES) {
-    getByte(Integer.BYTES - 1 - it)
+fun Short.toByteArray() = ByteArray(Short.SIZE_BYTES) {
+    getByte(Short.SIZE_BYTES - 1 - it)
 }
 
 /**
  * Encode the given value to a byte array in big endian byte order.
  */
-fun Long.toByteArray() = ByteArray(java.lang.Long.BYTES) {
-    getByte(java.lang.Long.BYTES - 1 - it)
-}
+fun Int.toByteArray() = ByteArray(Int.SIZE_BYTES) { getByte(Int.SIZE_BYTES - 1 - it) }
 
+/**
+ * Encode the given value to a byte array in big endian byte order.
+ */
+fun Long.toByteArray() = ByteArray(java.lang.Long.BYTES) { getByte(Long.SIZE_BYTES - 1 - it) }
+
+@Suppress("ComplexMethod")
 fun Serializable.toByteArray() = when (this) {
+    is Short -> this.toByteArray()
     is Int -> this.toByteArray()
     is Long -> this.toByteArray()
     is String -> this.toByteArray(Charsets.UTF_8)
@@ -81,6 +99,9 @@ private fun ByteArray.chunk(indexRange: IntRange): ByteArray =
         sliceArray(indexRange.start..min(lastIndex, indexRange.endInclusive))
 
 private val Byte.intValue get() = toInt() and BYTE_MASK
+
+private fun Short.getByte(byteIndex: Int) =
+        ((toInt() and byteIndex.byteMask) ushr byteIndex.bitIndex).toByte()
 
 private fun Int.getByte(byteIndex: Int) =
         ((this and byteIndex.byteMask) ushr byteIndex.bitIndex).toByte()
