@@ -77,6 +77,14 @@ fun Int.toByteArray() = ByteArray(Int.SIZE_BYTES) { getByte(Int.SIZE_BYTES - 1 -
 
 /**
  * Encode the given value to a byte array in big endian byte order.
+ * Only use the size least significant bytes.
+ */
+@Suppress("UNUSED_PARAMETER")
+fun Int.toByteArray(size: Int) =
+        toByteArray().sliceArray(Int.SIZE_BYTES - size until Int.SIZE_BYTES)
+
+/**
+ * Encode the given value to a byte array in big endian byte order.
  */
 fun Long.toByteArray() = ByteArray(java.lang.Long.BYTES) { getByte(Long.SIZE_BYTES - 1 - it) }
 

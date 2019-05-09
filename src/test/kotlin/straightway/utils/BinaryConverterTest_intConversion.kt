@@ -127,7 +127,13 @@ class BinaryConverterTest_intConversion {
     @Test
     fun `toByteArray of Int`() =
             Given { 0x12345678 } when_ { toByteArray() } then {
-                expect(it.result contentEquals byteArrayOf(0x12, 0x34, 0x56, 0x78))
+                expect(it.result is_ Equal to_ byteArrayOf(0x12, 0x34, 0x56, 0x78))
+            }
+
+    @Test
+    fun `toByteArray of Int with and size limit`() =
+            Given { 0x12345678 } when_ { toByteArray(2) } then {
+                expect(it.result is_ Equal to_ byteArrayOf(0x56, 0x78))
             }
 
     @Test
