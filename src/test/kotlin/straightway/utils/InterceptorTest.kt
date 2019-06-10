@@ -16,8 +16,8 @@
 package straightway.utils
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import straightway.error.Panic
-import straightway.expr.minus
 import straightway.testing.bdd.Given
 import straightway.testing.flow.*
 
@@ -51,13 +51,13 @@ class InterceptorTest {
     }
 
     @Test
-    fun `before is executed before the action`() {
+    fun `onEnter is executed before the action`() {
         var isBeforeActionCalled = false
         var isActionCalled = false
         Given {
             Interceptor("x")
         } while_ {
-            before { isBeforeActionCalled = true }
+            onEnter { isBeforeActionCalled = true }
         } when_ {
             this {
                 expect(isBeforeActionCalled is_ True)
@@ -69,12 +69,12 @@ class InterceptorTest {
     }
 
     @Test
-    fun `excpetion in before action aborts execution and throws the exception`() {
+    fun `excpetion in onEnter action aborts execution and throws the exception`() {
         var isActionCalled = false
         Given {
             Interceptor("x")
         } while_ {
-            before { throw Panic("Panic") }
+            onEnter { throw Panic("Panic") }
         } when_ {
             this {
                 isActionCalled = true
@@ -86,13 +86,13 @@ class InterceptorTest {
     }
 
     @Test
-    fun `after is executed after the action in normal execution`() {
+    fun `onLeave is executed after the action in normal execution`() {
         var isAfterActionCalled = false
         var isActionCalled = false
         Given {
             Interceptor("x")
         } while_ {
-            after { isAfterActionCalled = true }
+            onLeave { isAfterActionCalled = true }
         } when_ {
             this {
                 expect(isAfterActionCalled is_ False)
@@ -105,12 +105,12 @@ class InterceptorTest {
     }
 
     @Test
-    fun `after is executed after the action on exception`() {
+    fun `onLeave is executed after the action on exception`() {
         var isAfterActionCalled = false
         Given {
             Interceptor("x")
         } while_ {
-            after { isAfterActionCalled = true }
+            onLeave { isAfterActionCalled = true }
         } when_ {
             this { throw Panic("Panic") }
         } then {
@@ -120,13 +120,13 @@ class InterceptorTest {
     }
 
     @Test
-    fun `after is executed after the action on exception in before`() {
+    fun `onLeave is executed after the action on exception in before`() {
         var isAfterActionCalled = false
         Given {
             Interceptor("x")
         } while_ {
-            before { throw Panic("Panic") }
-            after { isAfterActionCalled = true }
+            onEnter { throw Panic("Panic") }
+            onLeave { isAfterActionCalled = true }
         } when_ {
             this { }
         } then {
@@ -136,12 +136,12 @@ class InterceptorTest {
     }
 
     @Test
-    fun `exception in after overrides exception in before`() =
+    fun `exception in onLeave overrides exception in before`() =
             Given {
                 Interceptor("x")
             } while_ {
-                before { throw IllegalAccessException() }
-                after { throw Panic("Panic in after") }
+                onEnter { throw IllegalAccessException() }
+                onLeave { throw Panic("Panic in onLeave") }
             } when_ {
                 this { }
             } then {
@@ -149,11 +149,11 @@ class InterceptorTest {
             }
 
     @Test
-    fun `exception in after overrides Exception in action`() =
+    fun `exception in onLeave overrides Exception in action`() =
             Given {
                 Interceptor("x")
             } while_ {
-                after { throw Panic("Panic in after") }
+                onLeave { throw Panic("Panic in onLeave") }
             } when_ {
                 this { throw IllegalAccessException() }
             } then {
@@ -179,12 +179,12 @@ class InterceptorTest {
     }
 
     @Test
-    fun `exception in after overrides exception in onException`() =
+    fun `exception in onLeave overrides exception in onException`() =
             Given {
                 Interceptor("x")
             } while_ {
                 onException { throw IllegalAccessException() }
-                after { throw Panic("Panic") }
+                onLeave { throw Panic("Panic") }
             } when_ {
                 this { throw IllegalAccessException() }
             } then {
@@ -192,39 +192,44 @@ class InterceptorTest {
             }
 
     @Test
-    fun `after is called with the code result`() =
+    fun `onReturn is not called after exception in onEnter`() =
             Given {
                 Interceptor("x")
             } while_ {
-                after { expect(it is_ Equal to_ 83) }
+                onEnter { throw Panic("Panic") }
+                onReturn { fail("onReturn called") }
             } when_ {
                 this { 83 }
             } then {
-                expect({ it.result } does  Not - Throw.exception)
+                expect({ it.result } does Throw.type<Panic>())
             }
 
     @Test
-    fun `after gets null parameter after exception in before`() =
+    fun `onReturn is not called after exception in invoke`() =
             Given {
                 Interceptor("x")
             } while_ {
-                before { throw Panic("Panic") }
-                after { expect(it is_ Null) }
-            } when_ {
-                this { 83 }
-            } then {
-                expect({ it.result } does  Throw.type<Panic>())
-            }
-
-    @Test
-    fun `after gets null parameter after exception in invoke`() =
-            Given {
-                Interceptor("x")
-            } while_ {
-                after { expect(it is_ Null) }
+                onReturn { fail("onReturn called") }
             } when_ {
                 invoke<Int> { throw Panic("Panic") }
             } then {
                 expect({ it.result } does  Throw.type<Panic>())
             }
+
+    @Test
+    fun `onReturn is called on successful return`() {
+        var isOnReturnCalled = false
+        Given {
+            Interceptor("x")
+        } while_ {
+            onReturn {
+                isOnReturnCalled = true
+                expect(it is_ Equal to_ 83)
+            }
+        } when_ {
+            this { 83 }
+        } then {
+            expect(isOnReturnCalled is_ True)
+        }
+    }
 }

@@ -21,29 +21,32 @@ package straightway.utils
  */
 class Interceptor<TReceiver>(private val receiver: TReceiver) {
 
-    private var beforeAction: TReceiver.() -> Unit = {}
-    private var afterAction: TReceiver.(result: Any?) -> Unit = {}
+    private var onEnterAction: TReceiver.() -> Unit = {}
+    private var afterAction: TReceiver.() -> Unit = {}
+    private var onReturnAction: TReceiver.(result: Any?) -> Unit = {}
     private var onExceptionAction: TReceiver.(Throwable) -> Unit = {}
 
     constructor(receiver: TReceiver, init: Interceptor<TReceiver>.() -> Unit) : this(receiver) { init() }
 
-    fun before(action: TReceiver.() -> Unit) { beforeAction = action }
+    fun onEnter(action: TReceiver.() -> Unit) { onEnterAction = action }
 
-    fun after(action: TReceiver.(result: Any?) -> Unit) { afterAction = action }
+    fun onLeave(action: TReceiver.() -> Unit) { afterAction = action }
+
+    fun onReturn(action: TReceiver.(result: Any?) -> Unit) { onReturnAction = action }
 
     fun onException(action: TReceiver.(Throwable) -> Unit) { onExceptionAction = action }
 
-    operator fun <TResult> invoke(action: TReceiver.() -> TResult): TResult {
-        var result: Any? = null
-        try {
-            receiver.beforeAction()
-            result = receiver.action()
-            return result;
-        } catch (ex: Throwable) {
-            receiver.onExceptionAction(ex)
-            throw ex
-        } finally {
-            receiver.afterAction(result)
-        }
-    }
+
+    operator fun <TResult> invoke(action: TReceiver.() -> TResult) =
+            try {
+                receiver.onEnterAction()
+                receiver.action().also {
+                    receiver.onReturnAction(it)
+                }
+            } catch (ex: Throwable) {
+                receiver.onExceptionAction(ex)
+                throw ex
+            } finally {
+                receiver.afterAction()
+            }
 }
