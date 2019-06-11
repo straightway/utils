@@ -15,27 +15,20 @@
  */
 package straightway.utils
 
+import java.util.Collections.synchronizedList
+
 /**
  * Tracer which stores the trace messages in a buffer list.
  */
 class BufferTracer : Tracer {
 
     private var onTraceAction: (TraceEntry) -> Any? = { it }
-    private val _traces = mutableListOf<Any>()
+    private val _traces = synchronizedList(mutableListOf<Any>())
 
     private val traceInterceptor = Interceptor<Tracer>(this) {
-        onEnter {
-            val traceEntry = onTraceAction(TraceEntry(invokeCaller, TraceEvent.Enter, TraceLevel.Unknown,null))
-            if (traceEntry != null) _traces.add(traceEntry)
-        }
-        onReturn {
-            val traceEntry = onTraceAction(TraceEntry(invokeCaller, TraceEvent.Return, TraceLevel.Unknown, it))
-            if (traceEntry != null) _traces.add(traceEntry)
-        }
-        onException {
-            val traceEntry = onTraceAction(TraceEntry(invokeCaller, TraceEvent.Exception, TraceLevel.Unknown, it))
-            if (traceEntry != null) _traces.add(traceEntry)
-        }
+        onEnter { addTrace(TraceEvent.Enter, TraceLevel.Unknown, null) }
+        onReturn { addTrace(TraceEvent.Return, TraceLevel.Unknown, it) }
+        onException { addTrace(TraceEvent.Exception, TraceLevel.Unknown, it) }
     }
 
     override fun onTrace(action: (TraceEntry) -> Any?) { onTraceAction = action }
@@ -44,10 +37,8 @@ class BufferTracer : Tracer {
 
     override fun clear() { _traces.clear() }
 
-    override fun trace(level: TraceLevel, message: () -> String) {
-        val traceEntry = onTraceAction(TraceEntry(invokeCaller, TraceEvent.Message, level, message()))
-        if (traceEntry != null) _traces.add(traceEntry)
-    }
+    override fun trace(level: TraceLevel, message: () -> String) =
+            addTrace(TraceEvent.Message, level, message())
 
     override operator fun <TResult> invoke(action: Tracer.() -> TResult) = traceInterceptor { action() }
 
@@ -56,6 +47,11 @@ class BufferTracer : Tracer {
             val stackTrace = Thread.currentThread().stackTrace
             return stackTrace.dropWhile { !it.isInvokeCall }.drop(1).first()
         }
+
+    private fun addTrace(event: TraceEvent, level: TraceLevel, value: Any?) {
+        val traceEntry = onTraceAction(TraceEntry(invokeCaller, event, level, value))
+        if (traceEntry != null) _traces.add(traceEntry)
+    }
 
     private val StackTraceElement?.isInvokeCall get() =
         this != null && className == this@BufferTracer::class.qualifiedName && methodName == "invoke"
