@@ -26,6 +26,6 @@ data class TraceEntry(
 ) {
     override fun toString() = "$levelString$stackTraceElement ${event.description}$valueString"
 
-    private val valueString get() = if (value == null) "" else ": $value"
+    private val valueString get() = if (value == null) "" else ": ${value.formatted()}"
     private val levelString get() = if (level == TraceLevel.Unknown) "" else "$level: "
 }

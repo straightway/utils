@@ -20,5 +20,5 @@ class NotTracer : Tracer {
     override fun clear() {}
     override fun onTrace(action: (TraceEntry) -> Any?) {}
     override fun trace(level: TraceLevel, message: () -> String) {}
-    override fun <TResult> invoke(action: Tracer.() -> TResult): TResult = action()
+    override fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult = action()
 }

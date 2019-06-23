@@ -23,7 +23,7 @@ interface Tracer {
     fun clear()
     fun onTrace(action: (TraceEntry) -> Any?)
     fun trace(level: TraceLevel, message: () -> String)
-    operator fun <TResult> invoke(action: Tracer.() -> TResult): TResult
+    operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult
 
     companion object {
         @Suppress("UNUSED_PARAMETER")

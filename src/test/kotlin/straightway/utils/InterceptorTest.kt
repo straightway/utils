@@ -112,7 +112,7 @@ class InterceptorTest {
         } while_ {
             onLeave { isAfterActionCalled = true }
         } when_ {
-            this { throw Panic("Panic") }
+            invoke<Int> { throw Panic("Panic") }
         } then {
             expect(isAfterActionCalled is_ True)
             expect({ it.result } does Throw.exception)
@@ -155,7 +155,7 @@ class InterceptorTest {
             } while_ {
                 onLeave { throw Panic("Panic in onLeave") }
             } when_ {
-                this { throw IllegalAccessException() }
+                invoke<Int> { throw IllegalAccessException() }
             } then {
                 expect({ it.result } does Throw.type<Panic>())
             }
@@ -171,7 +171,7 @@ class InterceptorTest {
                 isOnExceptionCalled = true
             }
         } when_ {
-            this { throw Panic("Panic") }
+            invoke<Int> { throw Panic("Panic") }
         } then {
             expect(isOnExceptionCalled is_ True)
             expect({ it.result } does Throw.type<Panic>())
@@ -186,7 +186,7 @@ class InterceptorTest {
                 onException { throw IllegalAccessException() }
                 onLeave { throw Panic("Panic") }
             } when_ {
-                this { throw IllegalAccessException() }
+                invoke<Int> { throw IllegalAccessException() }
             } then {
                 expect({ it.result } does Throw.type<Panic>())
             }

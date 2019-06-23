@@ -27,45 +27,41 @@ class BufferTracerTest {
     private class Tester {
         val tracer = BufferTracer()
         var traced = tracer.traces
-        fun testReturn(value: Int) = tracer { value }
+        fun testReturn(value: Int) = tracer(value) { value + 1 }
         fun testPanic(): Int = tracer { throw Panic("Panic") }
         fun testTrace(level: TraceLevel, message: String) = tracer { trace(level) { message } }
     }
 
+    private val test = Given { Tester() }
+
     @Test
     fun `result is traced`() {
-        Given {
-            Tester()
-        } when_ {
+        test when_ {
             testReturn(83)
         } then {
             assertEventSequence(
-                    { assertEnterEvent(Tester::testReturn) },
-                    { assertReturnEvent(Tester::testReturn, 83) })
+                    { assertEnterEvent(Tester::testReturn, 83) },
+                    { assertReturnEvent(Tester::testReturn, 84) })
         }
     }
 
     @Test
     fun `multiple events are traced`() {
-        Given {
-            Tester()
-        } when_ {
+        test when_ {
             testReturn(83)
             testReturn(83)
         } then {
             assertEventSequence(
-                    { assertEnterEvent(Tester::testReturn) },
-                    { assertReturnEvent(Tester::testReturn, 83) },
-                    { assertEnterEvent(Tester::testReturn) },
-                    { assertReturnEvent(Tester::testReturn, 83) })
+                    { assertEnterEvent(Tester::testReturn, 83) },
+                    { assertReturnEvent(Tester::testReturn, 84) },
+                    { assertEnterEvent(Tester::testReturn, 83) },
+                    { assertReturnEvent(Tester::testReturn, 84) })
         }
     }
 
     @Test
     fun `exception is traced`() {
-        Given {
-            Tester()
-        } when_ {
+        test when_ {
             testPanic()
         } then {
             assertExceptionHasBeenThrown(it)
@@ -77,9 +73,7 @@ class BufferTracerTest {
 
     @Test
     fun `returning null in onTrace interceptor disables tracing enter and return events`() =
-            Given {
-                Tester()
-            } while_ {
+            test while_ {
                 tracer.onTrace { null }
             } when_ {
                 testReturn(83)
@@ -89,9 +83,7 @@ class BufferTracerTest {
 
     @Test
     fun `returning null in onTrace interceptor disables tracing exception events`() =
-            Given {
-                Tester()
-            } while_ {
+            test while_ {
                 tracer.onTrace { null }
             } when_ {
                 testPanic()
@@ -102,9 +94,7 @@ class BufferTracerTest {
 
     @Test
     fun `returning null in onTrace interceptor disables tracing message events`() =
-            Given {
-                Tester()
-            } while_ {
+            test while_ {
                 tracer.onTrace { null }
             } when_ {
                 testTrace(TraceLevel.Info, "Hello")
@@ -114,9 +104,7 @@ class BufferTracerTest {
 
     @Test
     fun `clear removes all traces`() =
-            Given {
-                Tester()
-            } while_ {
+            test while_ {
                 testReturn(83)
             } when_ {
                 tracer.clear()
@@ -126,9 +114,7 @@ class BufferTracerTest {
 
     @Test
     fun `trace traces a message`() =
-            Given {
-                Tester()
-            } when_ {
+            test when_ {
                 testTrace(TraceLevel.Debug, "Hello World")
             } then {
                 assertEventSequence(
@@ -163,11 +149,11 @@ class BufferTracerTest {
             expect(value is Panic) { "Unexpected exception type: $value" }
         }
 
-        fun TraceEntry.assertEnterEvent(method: KCallable<*>) {
+        fun TraceEntry.assertEnterEvent(method: KCallable<*>, vararg params: Any? ) {
             assertFunctionCall(method)
             expect(level is_ Equal to_ TraceLevel.Unknown)
             expect(event is_ Equal to_ TraceEvent.Enter)
-            expect(value is_ Null)
+            expect(value is_ Equal to_ params)
         }
 
         fun TraceEntry.assertReturnEvent(method: KCallable<*>, returnValue: Any = Unit) {

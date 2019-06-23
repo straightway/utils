@@ -26,7 +26,6 @@ class BufferTracer : Tracer {
     private val _traces = synchronizedList(mutableListOf<Any>())
 
     private val traceInterceptor = Interceptor<Tracer>(this) {
-        onEnter { addTrace(TraceEvent.Enter, TraceLevel.Unknown, null) }
         onReturn { addTrace(TraceEvent.Return, TraceLevel.Unknown, it) }
         onException { addTrace(TraceEvent.Exception, TraceLevel.Unknown, it) }
     }
@@ -40,7 +39,11 @@ class BufferTracer : Tracer {
     override fun trace(level: TraceLevel, message: () -> String) =
             addTrace(TraceEvent.Message, level, message())
 
-    override operator fun <TResult> invoke(action: Tracer.() -> TResult) = traceInterceptor { action() }
+    override operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult) =
+            traceInterceptor {
+                addTrace(TraceEvent.Enter, TraceLevel.Unknown, params)
+                action()
+            }
 
     private val invokeCaller: StackTraceElement
         get() {

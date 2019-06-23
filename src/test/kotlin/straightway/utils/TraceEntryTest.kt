@@ -73,4 +73,46 @@ class TraceEntryTest {
             } then {
                 expect(it.result is_ Equal to_ "$stackTrace enters")
             }
+
+    @Test
+    fun `toString with array value has defined format`() =
+            Given {
+                TraceEntry(stackTrace, TraceEvent.Enter, TraceLevel.Unknown, arrayOf(1, null, "Hello"))
+            } when_ {
+                toString()
+            } then {
+                expect(it.result is_ Equal to_ "$stackTrace enters: [1, <null>, \"Hello\"]")
+            }
+
+    @Test
+    fun `toString with list value has defined format`() =
+            Given {
+                TraceEntry(stackTrace, TraceEvent.Enter, TraceLevel.Unknown, listOf(1, null, "Hello"))
+            } when_ {
+                toString()
+            } then {
+                expect(it.result is_ Equal to_ "$stackTrace enters: [1, <null>, \"Hello\"]")
+            }
+
+
+    @Test
+    fun `toString with map value has defined format`() =
+            Given {
+                TraceEntry(stackTrace, TraceEvent.Enter, TraceLevel.Unknown, mapOf(1 to null, 2 to "Hello"))
+            } when_ {
+                toString()
+            } then {
+                expect(it.result is_ Equal to_ "$stackTrace enters: {1=<null>, 2=\"Hello\"}")
+            }
+
+    @Test
+    fun `toString with nested collection`() =
+            Given {
+                TraceEntry(stackTrace, TraceEvent.Enter, TraceLevel.Unknown, mapOf(1 to arrayOf("Hello")))
+            } when_ {
+                toString()
+            } then {
+                expect(it.result is_ Equal to_ "$stackTrace enters: {1=[\"Hello\"]}")
+            }
+
 }
