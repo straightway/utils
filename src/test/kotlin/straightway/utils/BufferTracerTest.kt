@@ -29,7 +29,9 @@ class BufferTracerTest {
         var traced = tracer.traces
         fun testReturn(value: Int) = tracer(value) { value + 1 }
         fun testPanic(): Int = tracer { throw Panic("Panic") }
-        fun testTrace(level: TraceLevel, message: String) = tracer { trace(level) { message } }
+        fun testTrace(level: TraceLevel, message: String) = tracer {
+            trace(level) { message }
+        }
     }
 
     private val test = Given { Tester() }
@@ -117,10 +119,15 @@ class BufferTracerTest {
             test when_ {
                 testTrace(TraceLevel.Debug, "Hello World")
             } then {
+                lateinit var enterTrace: StackTraceElement
                 assertEventSequence(
-                        { assertEnterEvent(Tester::testTrace) },
                         {
-                            assertFunctionCall(Tester::testTrace)
+                            enterTrace = stackTraceElement
+                            assertEnterEvent(Tester::testTrace)
+                        },
+                        {
+                            expect(stackTraceElement.fileName is_ Equal to_ enterTrace.fileName)
+                            expect(stackTraceElement.lineNumber is_ Equal to_ enterTrace.lineNumber + 1)
                             expect(event is_ Equal to_ TraceEvent.Message)
                             expect(level is_ Equal to_ TraceLevel.Debug)
                             expect(value is_ Equal to_ "Hello World")
@@ -168,6 +175,6 @@ class BufferTracerTest {
         }
 
         fun StackTraceElement.isTestFunCall(method: KCallable<*>) =
-                className == Tester::class.java.name && methodName == method.name
+                className.startsWith(Tester::class.java.name) && methodName == method.name
     }
 }

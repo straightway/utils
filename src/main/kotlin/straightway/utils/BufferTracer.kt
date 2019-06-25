@@ -45,17 +45,18 @@ class BufferTracer : Tracer {
                 action()
             }
 
-    private val invokeCaller: StackTraceElement
-        get() {
-            val stackTrace = Thread.currentThread().stackTrace
-            return stackTrace.dropWhile { !it.isInvokeCall }.drop(1).first()
-        }
+    private fun getCallerOf(name: String): StackTraceElement? =
+            Thread.currentThread().stackTrace.dropWhile { !it.isCallTo(name) }.drop(1).firstOrNull()
 
     private fun addTrace(event: TraceEvent, level: TraceLevel, value: Any?) {
-        val traceEntry = onTraceAction(TraceEntry(invokeCaller, event, level, value))
+        val stackEntry = getCallerOf("trace") ?: getCallerOf("invoke")!!
+        val traceEntry = onTraceAction(TraceEntry(stackEntry, event, level, value))
         if (traceEntry != null) _traces.add(traceEntry)
     }
 
-    private val StackTraceElement?.isInvokeCall get() =
-        this != null && className == this@BufferTracer::class.qualifiedName && methodName == "invoke"
+    private fun StackTraceElement?.isCallTo(name: String): Boolean {
+        return this != null &&
+                className == (this@BufferTracer::class.qualifiedName!!) &&
+                methodName == name
+    }
 }
