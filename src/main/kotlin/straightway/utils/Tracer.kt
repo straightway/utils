@@ -27,7 +27,7 @@ interface Tracer {
 
     companion object {
         @Suppress("UNUSED_PARAMETER")
-        operator fun invoke(isTracingEnabled: () -> Boolean) =
-                if (isTracingEnabled()) BufferTracer() else NotTracer()
+        operator fun invoke(timeProvider: TimeProvider, isTracingEnabled: () -> Boolean) =
+                if (isTracingEnabled()) BufferTracer(timeProvider) else NotTracer()
     }
 }

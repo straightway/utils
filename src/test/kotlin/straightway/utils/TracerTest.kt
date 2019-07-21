@@ -15,6 +15,7 @@
  */
 package straightway.utils
 
+import com.nhaarman.mockito_kotlin.mock
 import org.junit.jupiter.api.Test
 import straightway.testing.flow.expect
 
@@ -22,9 +23,9 @@ class TracerTest {
 
     @Test
     fun `companion invocation with true returning action returns BufferedTracer`() =
-            expect(Tracer { true } is BufferTracer)
+            expect(Tracer(mock()) { true } is BufferTracer)
 
     @Test
     fun `companion invocation with false returning action returns NotTracer`() =
-            expect(Tracer { false } is NotTracer)
+            expect(Tracer(mock()) { false } is NotTracer)
 }

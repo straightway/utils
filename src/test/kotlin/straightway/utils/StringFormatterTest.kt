@@ -25,6 +25,10 @@ class StringFormatterTest {
             expect(3.formatted() is_ Equal to_ "3")
 
     @Test
+    fun `for byte, hex string is returned`() =
+            expect(16.toByte().formatted() is_ Equal to_ "10")
+
+    @Test
     fun `null value yields null string representation`() =
             expect(null.formatted() is_ Equal to_ "<null>")
 
@@ -37,8 +41,8 @@ class StringFormatterTest {
             expect(arrayOf(1, 2, 3).formatted() is_ Equal to_ "[1, 2, 3]")
 
     @Test
-    fun `ByteArray yields string with elements in bracked`() =
-            expect(byteArrayOf(1, 2, 3).formatted() is_ Equal to_ "[1, 2, 3]")
+    fun `ByteArray yields string with hex elements in bracked`() =
+            expect(byteArrayOf(1, 2, -1).formatted() is_ Equal to_ "[01, 02, ff]")
 
     @Test
     fun `CharArray yields string with elements in bracked`() =
@@ -94,7 +98,7 @@ class StringFormatterTest {
     @Test
     fun `Values with array inside is properly formatted`() =
             expect(Values(byteArrayOf(1, 2), byteArrayOf(3)).formatted() is_ Equal
-                    to_ "Values[[1, 2], [3]]")
+                    to_ "Values[[01, 02], [03]]")
 
     @Test
     fun `large arrays are cut in the middle`() =

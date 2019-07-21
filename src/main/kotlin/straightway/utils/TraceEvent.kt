@@ -22,5 +22,6 @@ enum class TraceEvent(val description: String) {
     Return("returns"),
     Exception("throws"),
     Enter("enters"),
-    Message("informs that")
+    Message("informs that"),
+    Calling("calls")
 }

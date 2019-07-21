@@ -16,18 +16,27 @@
 package straightway.utils
 
 import java.util.Collections.synchronizedList
+import kotlin.reflect.jvm.jvmName
+import java.lang.ThreadLocal
 
 /**
  * Tracer which stores the trace messages in a buffer list.
  */
-class BufferTracer : Tracer {
+class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
 
-    private var onTraceAction: (TraceEntry) -> Any? = { it }
+    private var onTraceAction: (TraceEntry) -> Any? = {  it }
     private val _traces = synchronizedList(mutableListOf<Any>())
+    private var nestingLevel = ThreadLocal.withInitial { 0 }
 
-    private val traceInterceptor = Interceptor<Tracer>(this) {
-        onReturn { addTrace(TraceEvent.Return, TraceLevel.Unknown, it) }
-        onException { addTrace(TraceEvent.Exception, TraceLevel.Unknown, it) }
+    private val traceInterceptor get() = Interceptor<Tracer>(this) {
+        onReturn {
+            nestingLevel.set(nestingLevel.get() - 1)
+            addTrace(TraceEvent.Return, TraceLevel.Unknown, it)
+        }
+        onException {
+            addTrace(TraceEvent.Exception, TraceLevel.Unknown, it)
+            nestingLevel.set(nestingLevel.get() - 1)
+        }
     }
 
     override fun onTrace(action: (TraceEntry) -> Any?) { onTraceAction = action }
@@ -42,21 +51,38 @@ class BufferTracer : Tracer {
     override operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult) =
             traceInterceptor {
                 addTrace(TraceEvent.Enter, TraceLevel.Unknown, params)
+                nestingLevel.set(nestingLevel.get() + 1)
                 action()
             }
 
-    private fun getCallerOf(name: String): StackTraceElement? =
-            Thread.currentThread().stackTrace.dropWhile { !it.isCallTo(name) }.drop(1).firstOrNull()
+    private fun getCallerOf(name: String): List<StackTraceElement> =
+            Thread.currentThread().stackTrace.dropWhile { !it.isCallTo(name) }.drop(1).take(2)
 
     private fun addTrace(event: TraceEvent, level: TraceLevel, value: Any?) {
-        val stackEntry = getCallerOf("trace") ?: getCallerOf("invoke")!!
-        val traceEntry = onTraceAction(TraceEntry(stackEntry, event, level, value))
-        if (traceEntry != null) _traces.add(traceEntry)
+        var caller = getCallerOf("trace")
+        if (caller.isEmpty()) caller = getCallerOf("invoke")
+        if (event == TraceEvent.Enter) tryAdd(level, TraceEvent.Calling, caller.last(), null)
+        tryAdd(level, event, caller.first(), value)
+    }
+
+    private fun tryAdd(level: TraceLevel, traceEvent: TraceEvent, caller: StackTraceElement, value: Any?) =
+        tryAdd(TraceEntry(
+                timeProvider.now,
+                Thread.currentThread().id,
+                caller,
+                nestingLevel.get(),
+                traceEvent,
+                level,
+                value))
+
+    private fun tryAdd(traceEntry: TraceEntry) {
+        val transformedTraceEntry = onTraceAction(traceEntry)
+        if (transformedTraceEntry != null) _traces.add(transformedTraceEntry)
     }
 
     private fun StackTraceElement?.isCallTo(name: String): Boolean {
         return this != null &&
-                className == (this@BufferTracer::class.qualifiedName!!) &&
-                methodName == name
+               className == BufferTracer::class.jvmName &&
+               methodName == name
     }
 }

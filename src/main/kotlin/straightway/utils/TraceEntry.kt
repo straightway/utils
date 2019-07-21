@@ -15,17 +15,40 @@
  */
 package straightway.utils
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 /**
  * A trace entry resulting from a trace call.
  */
 data class TraceEntry(
+        val timeStamp: LocalDateTime,
+        val threadId: Long,
         val stackTraceElement: StackTraceElement,
+        val nestingLevel: Int,
         val event: TraceEvent,
         val level: TraceLevel,
         val value: Any?
 ) {
-    override fun toString() = "$levelString$stackTraceElement ${event.description}$valueString"
+    override fun toString(): String {
+        val threadPrefix = "${timeStamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))} [$threadIdHex] "
+        val content = "$levelString$stackTraceElement ${event.description}$valueString"
+        val indentation = threadPrefix.length + 2 * nestingLevel
+        return "$threadPrefix${content.indent(indentation).removeRange(0 until threadPrefix.length)}"
+    }
+
+    private val threadIdHex get() =
+            threadIdBytes.map { it.toHex() }.joinToString("")
+
+    private val threadIdBytes get() =
+            with(threadId.toByteArray().dropWhile { it == NULL }) {
+                if (isEmpty()) listOf(NULL) else this
+            }
 
     private val valueString get() = if (value == null) "" else ": ${value.formatted()}"
     private val levelString get() = if (level == TraceLevel.Unknown) "" else "$level: "
+
+    private companion object {
+        const val NULL: Byte = 0
+    }
 }

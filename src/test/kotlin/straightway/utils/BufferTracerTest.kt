@@ -15,23 +15,32 @@
  */
 package straightway.utils
 
+import com.nhaarman.mockito_kotlin.mock
 import org.junit.jupiter.api.Test
 import straightway.error.Panic
 import straightway.testing.bdd.Given
 import straightway.testing.bdd.WhenResult
 import straightway.testing.flow.*
+import java.time.LocalDateTime
 import kotlin.reflect.KCallable
 
 class BufferTracerTest {
 
     private class Tester {
-        val tracer = BufferTracer()
+        val currentTime = LocalDateTime.of(2000, 1, 2, 3, 4, 5)!!
+        val timeProvider = mock<TimeProvider> { on { now }.thenAnswer { currentTime } }
+        val tracer = BufferTracer(timeProvider)
         var traced = tracer.traces
+        fun callTestReturn(value: Int) = testReturn(value)
         fun testReturn(value: Int) = tracer(value) { value + 1 }
+        fun callTestPanic() = testPanic()
         fun testPanic(): Int = tracer { throw Panic("Panic") }
+        fun callTestTrace(level: TraceLevel, message: String) = testTrace(level, message)
         fun testTrace(level: TraceLevel, message: String) = tracer {
             trace(level) { message }
         }
+        fun nestedCall() = tracer { testReturn(83) }
+        fun nestedPanic() = tracer { try { testPanic() } catch(e: Panic) {} }
     }
 
     private val test = Given { Tester() }
@@ -39,9 +48,10 @@ class BufferTracerTest {
     @Test
     fun `result is traced`() {
         test when_ {
-            testReturn(83)
+            callTestReturn(83)
         } then {
             assertEventSequence(
+                    { assertCallingEvent(Tester::callTestReturn) },
                     { assertEnterEvent(Tester::testReturn, 83) },
                     { assertReturnEvent(Tester::testReturn, 84) })
         }
@@ -50,12 +60,14 @@ class BufferTracerTest {
     @Test
     fun `multiple events are traced`() {
         test when_ {
-            testReturn(83)
-            testReturn(83)
+            callTestReturn(83)
+            callTestReturn(83)
         } then {
             assertEventSequence(
+                    { assertCallingEvent(Tester::callTestReturn) },
                     { assertEnterEvent(Tester::testReturn, 83) },
                     { assertReturnEvent(Tester::testReturn, 84) },
+                    { assertCallingEvent(Tester::callTestReturn) },
                     { assertEnterEvent(Tester::testReturn, 83) },
                     { assertReturnEvent(Tester::testReturn, 84) })
         }
@@ -64,10 +76,11 @@ class BufferTracerTest {
     @Test
     fun `exception is traced`() {
         test when_ {
-            testPanic()
+            callTestPanic()
         } then {
             assertExceptionHasBeenThrown(it)
             assertEventSequence(
+                    { assertCallingEvent(Tester::callTestPanic) },
                     { assertEnterEvent(Tester::testPanic) },
                     { assertPanic() })
         }
@@ -117,22 +130,100 @@ class BufferTracerTest {
     @Test
     fun `trace traces a message`() =
             test when_ {
-                testTrace(TraceLevel.Debug, "Hello World")
+                callTestTrace(TraceLevel.Debug, "Hello World")
             } then {
-                lateinit var enterTrace: StackTraceElement
+                lateinit var callTraceEntry: StackTraceElement
+                lateinit var enterTraceEntry: StackTraceElement
                 assertEventSequence(
                         {
-                            enterTrace = stackTraceElement
+                            callTraceEntry = stackTraceElement
+                            assertCallingEvent(Tester::callTestTrace)
+                        },
+                        {
+                            expect(stackTraceElement.fileName is_ Equal to_ callTraceEntry.fileName)
+                            expect(stackTraceElement.lineNumber is_ Equal to_ callTraceEntry.lineNumber + 1)
+                            enterTraceEntry = stackTraceElement
                             assertEnterEvent(Tester::testTrace)
                         },
                         {
-                            expect(stackTraceElement.fileName is_ Equal to_ enterTrace.fileName)
-                            expect(stackTraceElement.lineNumber is_ Equal to_ enterTrace.lineNumber + 1)
+                            expect(stackTraceElement.fileName is_ Equal to_ enterTraceEntry.fileName)
+                            expect(stackTraceElement.lineNumber is_ Equal to_ enterTraceEntry.lineNumber + 1)
                             expect(event is_ Equal to_ TraceEvent.Message)
                             expect(level is_ Equal to_ TraceLevel.Debug)
                             expect(value is_ Equal to_ "Hello World")
                         },
                         { assertReturnEvent(Tester::testTrace) })
+            }
+
+    @Test
+    fun `first call, entry and return events have nesting level 0`() =
+            test when_ {
+                callTestReturn(83)
+            } then {
+                traced.map { it as TraceEntry }.forEach {
+                    expect(it.nestingLevel is_ Equal to_ 0)
+                }
+
+            }
+
+    @Test
+    fun `intermediate trace event has nesting level 1`() =
+            test when_ {
+                callTestTrace(TraceLevel.Debug, "Hello")
+            } then {
+                traced.map { it as TraceEntry }.filter { it.event == TraceEvent.Message }.forEach {
+                    expect(it.nestingLevel is_ Equal to_ 1)
+                }
+            }
+
+    @Test
+    fun `exception trace event has nesting level 1`() =
+            test when_ {
+                nestedPanic()
+            } then {
+                expect(traced.map { (it as TraceEntry).nestingLevel } is_
+                        Equal to_ Values(0, 0, 1, 1, 2, 0))
+            }
+
+    @Test
+    fun `trace entry has thread id`() =
+            test when_ {
+                callTestTrace(TraceLevel.Debug, "Hello")
+            } then {
+                val currentThreadId = Thread.currentThread().id
+                traced.forEach {
+                    expect((it as TraceEntry).threadId is_ Equal to_ currentThreadId)
+                }
+            }
+
+    @Test
+    fun `exception trace entry has thread id`() =
+            test when_ {
+                callTestPanic()
+            } then {
+                assertExceptionHasBeenThrown(it)
+                val currentThreadId = Thread.currentThread().id
+                traced.forEach {
+                    expect((it as TraceEntry).threadId is_ Equal to_ currentThreadId)
+                }
+            }
+
+    @Test
+    fun `nested call has nesting level 1`() =
+            test when_ {
+                nestedCall()
+            } then {
+                expect(traced.map { (it as TraceEntry).nestingLevel } is_
+                        Equal to_ Values(0, 0, 1, 1, 1, 0))
+
+            }
+
+    @Test
+    fun `call contains time stamp`() =
+            test when_ {
+                callTestReturn(83)
+            } then {
+                expect(traced.all { (it as TraceEntry).timeStamp == currentTime } )
             }
 
     private companion object {
@@ -154,6 +245,13 @@ class BufferTracerTest {
             expect(level is_ Equal to_ TraceLevel.Unknown)
             expect(event is_ Equal to_ TraceEvent.Exception)
             expect(value is Panic) { "Unexpected exception type: $value" }
+        }
+
+        fun TraceEntry.assertCallingEvent(method: KCallable<*>) {
+            assertFunctionCall(method)
+            expect(level is_ Equal to_ TraceLevel.Unknown)
+            expect(event is_ Equal to_ TraceEvent.Calling)
+            expect(value is_ Null)
         }
 
         fun TraceEntry.assertEnterEvent(method: KCallable<*>, vararg params: Any? ) {

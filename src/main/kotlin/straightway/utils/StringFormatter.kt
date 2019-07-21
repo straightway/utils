@@ -18,6 +18,7 @@ package straightway.utils
 @Suppress("ComplexMethod")
 fun Any?.formatted(): String = when (this) {
     is String -> "\"$this\""
+    is Byte -> this.toHex()
     is Array<*> -> this.toList().formatted()
     is ByteArray -> this.toList().formatted()
     is CharArray -> this.toList().formatted()
