@@ -26,8 +26,9 @@ interface Tracer {
     operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult
 
     companion object {
-        @Suppress("UNUSED_PARAMETER")
         operator fun invoke(timeProvider: TimeProvider, isTracingEnabled: () -> Boolean) =
                 if (isTracingEnabled()) BufferTracer(timeProvider) else NotTracer()
+        operator fun invoke(isTracingEnabled: () -> Boolean) =
+                if (isTracingEnabled()) BufferTracer(RealTimeProvider()) else NotTracer()
     }
 }

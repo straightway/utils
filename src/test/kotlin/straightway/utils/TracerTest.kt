@@ -22,10 +22,18 @@ import straightway.testing.flow.expect
 class TracerTest {
 
     @Test
-    fun `companion invocation with true returning action returns BufferedTracer`() =
+    fun `companion invocation with TimeProvider and true returning action returns BufferedTracer`() =
             expect(Tracer(mock()) { true } is BufferTracer)
 
     @Test
-    fun `companion invocation with false returning action returns NotTracer`() =
+    fun `companion invocation with TimeProvider and false returning action returns NotTracer`() =
             expect(Tracer(mock()) { false } is NotTracer)
+
+    @Test
+    fun `companion invocation without TimeProvider and true returning action returns BufferedTracer`() =
+            expect(Tracer { true } is BufferTracer)
+
+    @Test
+    fun `companion invocation without TimeProvider and false returning action returns NotTracer`() =
+            expect(Tracer { false } is NotTracer)
 }
