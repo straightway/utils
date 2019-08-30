@@ -45,7 +45,7 @@ class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
 
     override fun clear() { _traces.clear() }
 
-    override fun trace(level: TraceLevel, message: () -> String) =
+    override fun traceMessage(level: TraceLevel, message: () -> String) =
             addTrace(TraceEvent.Message, level, message())
 
     override operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult) =
@@ -59,7 +59,7 @@ class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
             Thread.currentThread().stackTrace.dropWhile { !it.isCallTo(name) }.drop(1).take(2)
 
     private fun addTrace(event: TraceEvent, level: TraceLevel, value: Any?) {
-        var caller = getCallerOf("trace")
+        var caller = getCallerOf("traceMessage")
         if (caller.isEmpty()) caller = getCallerOf("invoke")
         if (event == TraceEvent.Enter) tryAdd(level, TraceEvent.Calling, caller.last(), null)
         tryAdd(level, event, caller.first(), value)

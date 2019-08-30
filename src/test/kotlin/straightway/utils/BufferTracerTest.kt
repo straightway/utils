@@ -37,7 +37,7 @@ class BufferTracerTest {
         fun testPanic(): Int = tracer { throw Panic("Panic") }
         fun callTestTrace(level: TraceLevel, message: String) = testTrace(level, message)
         fun testTrace(level: TraceLevel, message: String) = tracer {
-            trace(level) { message }
+            traceMessage(level) { message }
         }
         fun nestedCall() = tracer { testReturn(83) }
         fun nestedPanic() = tracer { try { testPanic() } catch(e: Panic) {} }

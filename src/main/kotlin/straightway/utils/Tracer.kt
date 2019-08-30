@@ -22,8 +22,8 @@ interface Tracer {
     val traces: List<Any>
     fun clear()
     fun onTrace(action: (TraceEntry) -> Any?)
-    fun trace(level: TraceLevel, message: () -> String)
-    operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult
+    fun traceMessage(level: TraceLevel, message: () -> String)
+    operator fun <TResult> invoke(vararg params: Any?, action: (Tracer) -> TResult): TResult
 
     companion object {
         operator fun invoke(timeProvider: TimeProvider, isTracingEnabled: () -> Boolean) =

@@ -98,10 +98,10 @@ fun Serializable.toByteArray() = when (this) {
 }
 
 fun ByteArray.toChunksOfSize(chunkBytes: Int): List<ByteArray> =
-    mutableListOf<ByteArray>().also {
-        for (i in 0 until size step chunkBytes)
-            it.add(chunk(i until i + chunkBytes))
-    }
+        mutableListOf<ByteArray>().also {
+            for (i in 0 until size step chunkBytes)
+                it.add(chunk(i until i + chunkBytes))
+        }
 
 private fun ByteArray.chunk(indexRange: IntRange): ByteArray =
         sliceArray(indexRange.start..min(lastIndex, indexRange.endInclusive))

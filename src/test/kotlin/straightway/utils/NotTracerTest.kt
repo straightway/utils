@@ -51,7 +51,7 @@ class NotTracerTest {
     @Test
     fun `trace has no effect`() =
             test when_ {
-                trace(TraceLevel.Info) {"Message" }
+                traceMessage(TraceLevel.Info) {"Message" }
             } then {
                 expect({ it.result } does Not - Throw.exception)
             }
