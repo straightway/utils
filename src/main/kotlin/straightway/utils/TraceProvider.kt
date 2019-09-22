@@ -16,17 +16,9 @@
 package straightway.utils
 
 /**
- * Allow tracing method calls and custom messages.
+ * Get and clear traces.
  */
-interface Tracer {
-    fun onTrace(action: (TraceEntry) -> Any?)
-    fun traceMessage(level: TraceLevel, message: () -> String)
-    operator fun <TResult> invoke(vararg params: Any?, action: (Tracer) -> TResult): TResult
-
-    companion object {
-        operator fun invoke(timeProvider: TimeProvider, isTracingEnabled: () -> Boolean) : Tracer =
-                if (isTracingEnabled()) BufferTracer(timeProvider) else NotTracer()
-        operator fun invoke(isTracingEnabled: () -> Boolean) : Tracer =
-                if (isTracingEnabled()) BufferTracer(RealTimeProvider()) else NotTracer()
-    }
+interface TraceProvider {
+    val traces: List<Any>
+    fun clear()
 }

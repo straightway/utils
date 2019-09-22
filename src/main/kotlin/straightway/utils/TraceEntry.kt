@@ -31,10 +31,12 @@ data class TraceEntry(
         val value: Any?
 ) {
     override fun toString(): String {
-        val threadPrefix = "${timeStamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))} [$threadIdHex] "
+        val timestamp = timeStamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
+        val threadPrefix = "$timestamp [$threadIdHex] "
         val content = "$levelString$stackTraceElement ${event.description}$valueString"
         val indentation = threadPrefix.length + 2 * nestingLevel
-        return "$threadPrefix${content.indent(indentation).removeRange(0 until threadPrefix.length)}"
+        val formattedContent = content.indent(indentation).removeRange(0 until threadPrefix.length)
+        return "$threadPrefix$formattedContent"
     }
 
     private val threadIdHex get() =

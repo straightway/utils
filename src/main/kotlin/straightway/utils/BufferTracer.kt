@@ -22,7 +22,7 @@ import java.lang.ThreadLocal
 /**
  * Tracer which stores the trace messages in a buffer list.
  */
-class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
+class BufferTracer(private val timeProvider: TimeProvider) : Tracer, TraceProvider {
 
     private var onTraceAction: (TraceEntry) -> Any? = {  it }
     private val _traces = synchronizedList(mutableListOf<Any>())
@@ -31,10 +31,10 @@ class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
     private val traceInterceptor get() = Interceptor<Tracer>(this) {
         onReturn {
             nestingLevel.set(nestingLevel.get() - 1)
-            addTrace(TraceEvent.Return, TraceLevel.Unknown, it)
+            addTrace(Trace(TraceEvent.Return, TraceLevel.Unknown, it))
         }
         onException {
-            addTrace(TraceEvent.Exception, TraceLevel.Unknown, it)
+            addTrace(Trace(TraceEvent.Exception, TraceLevel.Unknown, it))
             nestingLevel.set(nestingLevel.get() - 1)
         }
     }
@@ -46,11 +46,11 @@ class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
     override fun clear() { _traces.clear() }
 
     override fun traceMessage(level: TraceLevel, message: () -> String) =
-            addTrace(TraceEvent.Message, level, message())
+            addTrace(Trace(TraceEvent.Message, level, message()))
 
     override operator fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult) =
             traceInterceptor {
-                addTrace(TraceEvent.Enter, TraceLevel.Unknown, params)
+                addTrace(Trace(TraceEvent.Enter, TraceLevel.Unknown, params))
                 nestingLevel.set(nestingLevel.get() + 1)
                 action()
             }
@@ -58,22 +58,25 @@ class BufferTracer(private val timeProvider: TimeProvider) : Tracer {
     private fun getCallerOf(name: String): List<StackTraceElement> =
             Thread.currentThread().stackTrace.dropWhile { !it.isCallTo(name) }.drop(1).take(2)
 
-    private fun addTrace(event: TraceEvent, level: TraceLevel, value: Any?) {
+    private data class Trace(val event: TraceEvent, val level: TraceLevel, val value: Any? = null)
+
+    private fun addTrace(trace: Trace) = with(trace) {
         var caller = getCallerOf("traceMessage")
         if (caller.isEmpty()) caller = getCallerOf("invoke")
-        if (event == TraceEvent.Enter) tryAdd(level, TraceEvent.Calling, caller.last(), null)
-        tryAdd(level, event, caller.first(), value)
+        if (event == TraceEvent.Enter) tryAdd(Trace(TraceEvent.Calling, level), caller.last())
+        tryAdd(trace, caller.first())
     }
 
-    private fun tryAdd(level: TraceLevel, traceEvent: TraceEvent, caller: StackTraceElement, value: Any?) =
+    private fun tryAdd(trace: Trace, caller: StackTraceElement) = with(trace) {
         tryAdd(TraceEntry(
                 timeProvider.now,
                 Thread.currentThread().id,
                 caller,
                 nestingLevel.get(),
-                traceEvent,
+                event,
                 level,
                 value))
+    }
 
     private fun tryAdd(traceEntry: TraceEntry) {
         val transformedTraceEntry = onTraceAction(traceEntry)

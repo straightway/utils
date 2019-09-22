@@ -15,10 +15,14 @@
  */
 package straightway.utils
 
-class NotTracer : Tracer {
+/**
+ * Tracer implementation which does nothing.
+ */
+class NotTracer : Tracer, TraceProvider {
     override val traces = listOf<TraceEntry>()
     override fun clear() {}
     override fun onTrace(action: (TraceEntry) -> Any?) {}
     override fun traceMessage(level: TraceLevel, message: () -> String) {}
-    override fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult = action()
+    override fun <TResult> invoke(vararg params: Any?, action: Tracer.() -> TResult): TResult =
+            action()
 }

@@ -26,7 +26,8 @@ class Interceptor<TReceiver>(private val receiver: TReceiver) {
     private var onReturnAction: TReceiver.(result: Any?) -> Unit = {}
     private var onExceptionAction: TReceiver.(Throwable) -> Unit = {}
 
-    constructor(receiver: TReceiver, init: Interceptor<TReceiver>.() -> Unit) : this(receiver) { init() }
+    constructor(receiver: TReceiver, init: Interceptor<TReceiver>.() -> Unit)
+            : this(receiver) { init() }
 
     fun onEnter(action: TReceiver.() -> Unit) { onEnterAction = action }
 
@@ -36,7 +37,7 @@ class Interceptor<TReceiver>(private val receiver: TReceiver) {
 
     fun onException(action: TReceiver.(Throwable) -> Unit) { onExceptionAction = action }
 
-
+    @Suppress("TooGenericExceptionCaught")
     operator fun <TResult> invoke(action: TReceiver.() -> TResult) =
             try {
                 receiver.onEnterAction()
